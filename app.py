@@ -1,13 +1,9 @@
 import streamlit as st
 import json, pandas as pd
 from io import BytesIO
-import google.generativeai as genai
 
 st.set_page_config(page_title="Texnik Ko'rik Tahlili", page_icon="🚂")
-st.title(" Texnik Ko'rik AI Tahlili")
-
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+st.title("🚂 Texnik Ko'rik Tahlili")
 
 uploaded = st.file_uploader("JSON fayl yuklang", type="json")
 
@@ -47,7 +43,6 @@ if uploaded:
     result["Yopilgan vaqt"]   = result["Yopilgan vaqt"].dt.tz_localize(None)
     result = result.sort_values("Ortiqcha sarflangan (soat)", ascending=False)
 
-    # Statistika
     col1, col2, col3 = st.columns(3)
     col1.metric("Jami ko'riklar", len(result))
     col2.metric(" Normal", len(result[result["Holat"] == "Normal"]))
@@ -55,56 +50,7 @@ if uploaded:
 
     st.dataframe(result, use_container_width=True)
 
-    # Excel yuklab olish
     buffer = BytesIO()
     result.to_excel(buffer, index=False)
     st.download_button("📥 Excel yuklab olish", buffer.getvalue(),
                        "korik_tahlil.xlsx", "application/vnd.ms-excel")
-
-    st.divider()
-    st.subheader("🤖 AI Tahlil")
-
-    top_oshgan = result[result["Holat"] != "Normal"].head(5)[
-        ["Lokomotiv", "Model", "Depo",
-         "Sarflangan vaqt (soat)", "Normal vaqt / Median (soat)",
-         "Ortiqcha sarflangan (soat)"]
-    ].to_string(index=False)
-
-    depo_stat = result.groupby("Depo")["Sarflangan vaqt (soat)"].agg(
-        count="count", mean="mean"
-    ).round(2).to_string()
-
-    summary = f"""
-Jami ko'riklar: {len(result)}
-Normal: {len(result[result['Holat'] == 'Normal'])}
-Normadan oshgan: {len(result[result['Holat'] != 'Normal'])}
-
-Eng ko'p vaqt sarflagan top 5 ko'rik:
-{top_oshgan}
-
-Depo bo'yicha statistika:
-{depo_stat}
-"""
-
-    user_question = st.text_input(
-        "AI ga savol bering (ixtiyoriy):",
-        placeholder="Masalan: qaysi depo muammoli?"
-    )
-
-    if st.button("🔍 AI Tahlil qilsin"):
-        with st.spinner("AI tahlil qilmoqda..."):
-            prompt = f"""
-Sen O'zbekiston temir yo'li lokomotiv texnik ko'rigi mutaxassisisan.
-Quyidagi statistika asosida o'zbek tilida professional tahlil qil.
-
-{summary}
-
-{"Savol: " + user_question if user_question else "Umumiy tahlil va tavsiyalar ber."}
-
-Quyidagilarni yoz:
-1. Umumiy holat xulosasi
-2. Muammoli lokomotivlar yoki depolar
-3. Sabablari va tavsiyalar
-"""
-            response = model.generate_content(prompt)
-            st.markdown(response.text)
