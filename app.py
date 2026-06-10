@@ -3,7 +3,7 @@ import json, pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Texnik Ko'rik Tahlili", page_icon="🚂")
-st.title("🚂 Texnik Ko'rik Tahlili")
+st.title(" Texnik Ko'rik Tahlili")
 
 uploaded = st.file_uploader("JSON fayl yuklang", type="json")
 
